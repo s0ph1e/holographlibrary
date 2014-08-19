@@ -60,7 +60,9 @@ public class PieGraph extends View implements  HoloGraphAnimate {
     private Point mBackgroundImageAnchor = new Point(0,0);
     private boolean mBackgroundImageCenter = false;
 
-
+    private boolean mPercentageValues = true;
+    private int mPercentageRadius = 10;
+    private int mPercentageOffset = 0;
 
     private int mDuration = 300;//in ms
     private Interpolator mInterpolator;
@@ -111,6 +113,9 @@ public class PieGraph extends View implements  HoloGraphAnimate {
             radius = midY;
         }
         radius -= mPadding;
+        if(mPercentageValues) {
+            radius -= (mPercentageOffset + mPercentageRadius);
+        }
         innerRadius = radius * mInnerCircleRatio / 255;
 
         for (PieSlice slice : mSlices) {
@@ -147,8 +152,26 @@ public class PieGraph extends View implements  HoloGraphAnimate {
                     (int) (midX + radius),
                     (int) (midY + radius));
             canvas.drawPath(p, mPaint);
-            currentAngle = currentAngle + currentSweep;
 
+            // Draw percentage values
+            if(mPercentageValues) {
+                String textToDraw = slice.getTitle();
+
+                float textAngle = currentAngle + currentSweep / 2;
+                float cos = (float) Math.cos(Math.toRadians((double) textAngle));
+                float sin = (float) Math.sin(Math.toRadians((double) textAngle));
+                float textX = midX + (radius + mPercentageOffset + mPercentageRadius) * cos;
+                float textY = midY + (radius + mPercentageOffset + mPercentageRadius) * sin;
+                Paint.Align textAlign = cos < 0 ? Paint.Align.RIGHT : Paint.Align.LEFT;
+
+                mPaint.reset();
+                mPaint.setColor(getResources().getColor(android.R.color.black));
+                mPaint.setTextSize(20);
+                mPaint.setTextAlign(textAlign);
+                canvas.drawText(textToDraw, textX, textY - (mPaint.descent() + mPaint.ascent()) / 2, mPaint);
+            }
+
+            currentAngle = currentAngle + currentSweep;
             count++;
         }
         mDrawCompleted = true;

@@ -35,7 +35,7 @@ public class PieSlice {
     private float mValue;
     private float mOldValue;
     private float mGoalValue;
-    private String mTitle;
+    private String mTitle = "";
 
     public String getTitle() {
         return mTitle;
