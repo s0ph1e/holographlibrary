@@ -61,8 +61,8 @@ public class PieGraph extends View implements  HoloGraphAnimate {
     private boolean mBackgroundImageCenter = false;
 
     private boolean mPercentageValues = true;
-    private int mPercentageRadius = 10;
-    private int mPercentageOffset = 0;
+    private int mPercentageRadius = 15;
+    private int mPercentageOffset = -5;
 
     private int mDuration = 300;//in ms
     private Interpolator mInterpolator;
@@ -114,7 +114,7 @@ public class PieGraph extends View implements  HoloGraphAnimate {
         }
         radius -= mPadding;
         if(mPercentageValues) {
-            radius -= (mPercentageOffset + mPercentageRadius);
+            radius -= (mPercentageOffset + 2 * mPercentageRadius);
         }
         innerRadius = radius * mInnerCircleRatio / 255;
 
@@ -155,19 +155,22 @@ public class PieGraph extends View implements  HoloGraphAnimate {
 
             // Draw percentage values
             if(mPercentageValues) {
-                String textToDraw = slice.getTitle();
-
+                String textToDraw = String.format("%.0f%%", currentSweep / 360 * 100);
                 float textAngle = currentAngle + currentSweep / 2;
                 float cos = (float) Math.cos(Math.toRadians((double) textAngle));
                 float sin = (float) Math.sin(Math.toRadians((double) textAngle));
                 float textX = midX + (radius + mPercentageOffset + mPercentageRadius) * cos;
                 float textY = midY + (radius + mPercentageOffset + mPercentageRadius) * sin;
-                Paint.Align textAlign = cos < 0 ? Paint.Align.RIGHT : Paint.Align.LEFT;
 
                 mPaint.reset();
-                mPaint.setColor(getResources().getColor(android.R.color.black));
-                mPaint.setTextSize(20);
-                mPaint.setTextAlign(textAlign);
+                mPaint.setAntiAlias(true);
+                mPaint.setTextSize(mPercentageRadius);
+                mPaint.setTextAlign(Paint.Align.CENTER);
+                mPaint.setColor(getResources().getColor(android.R.color.white));
+                canvas.drawCircle(textX, textY, mPercentageRadius + 2, mPaint);
+                mPaint.setColor(slice.getColor());
+                canvas.drawCircle(textX, textY, mPercentageRadius, mPaint);
+                mPaint.setColor(getResources().getColor(android.R.color.white));
                 canvas.drawText(textToDraw, textX, textY - (mPaint.descent() + mPaint.ascent()) / 2, mPaint);
             }
 
