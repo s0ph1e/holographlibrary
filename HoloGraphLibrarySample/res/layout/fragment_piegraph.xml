@@ -60,6 +60,57 @@
 
 
     </LinearLayout>
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Draw labels"
+        android:id="@+id/checkBoxDrawLabels" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_margin="@dimen/default_margin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="0dip"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:text="Label offset"
+            android:layout_weight="1"/>
+
+        <SeekBar
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:progress="15"
+            android:max="40"
+            android:id="@+id/seekBarLabelOffset"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_margin="@dimen/default_margin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="0dip"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:text="Label radius"
+            android:layout_weight="1"/>
+
+        <SeekBar
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:progress="15"
+            android:max="30"
+            android:id="@+id/seekBarLabelRadius"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
