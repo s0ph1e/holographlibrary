@@ -36,6 +36,7 @@ public class PieSlice {
     private float mOldValue;
     private float mGoalValue;
     private String mTitle = "";
+    private float mCentralAngle;
 
     public String getTitle() {
         return mTitle;
@@ -88,5 +89,13 @@ public class PieSlice {
 
     public Region getRegion() {
         return mRegion;
+    }
+
+    public float getCentralAngle() {
+        return mCentralAngle;
+    }
+
+    public void setCentralAngle(float centralAngle) {
+        mCentralAngle = centralAngle;
     }
 }

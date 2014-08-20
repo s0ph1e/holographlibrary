@@ -34,6 +34,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.os.Build;
@@ -60,9 +61,13 @@ public class PieGraph extends View implements  HoloGraphAnimate {
     private Point mBackgroundImageAnchor = new Point(0,0);
     private boolean mBackgroundImageCenter = false;
 
-    private boolean mPercentageValues = true;
-    private int mPercentageRadius = 15;
-    private int mPercentageOffset = -5;
+    private PointF mCentralPoint = new PointF();
+    private float mRadius;
+    private float mTotalValue;
+
+    private boolean mDrawLabels = false;
+    private int mLabelRadius = 15;
+    private int mLabelOffset = -5;
 
     private int mDuration = 300;//in ms
     private Interpolator mInterpolator;
@@ -86,7 +91,7 @@ public class PieGraph extends View implements  HoloGraphAnimate {
     }
 
     public void onDraw(Canvas canvas) {
-        float midX, midY, radius, innerRadius;
+        float innerRadius;
 
         canvas.drawColor(Color.TRANSPARENT);
         mPaint.reset();
@@ -103,23 +108,19 @@ public class PieGraph extends View implements  HoloGraphAnimate {
 
         float currentAngle = 270;
         float currentSweep = 0;
-        float totalValue = 0;
 
-        midX = getWidth() / 2;
-        midY = getHeight() / 2;
-        if (midX < midY) {
-            radius = midX;
-        } else {
-            radius = midY;
-        }
-        radius -= mPadding;
-        if(mPercentageValues) {
-            radius -= (mPercentageOffset + 2 * mPercentageRadius);
-        }
-        innerRadius = radius * mInnerCircleRatio / 255;
+        mCentralPoint.set(getWidth() / 2, getHeight() / 2);
 
+        mRadius = Math.min(mCentralPoint.x, mCentralPoint.y) - mPadding;
+        int labelTotalOffset = mLabelOffset + 2 * mLabelRadius;
+        if(mDrawLabels && labelTotalOffset > 0) {
+            mRadius -= labelTotalOffset;
+        }
+        innerRadius = mRadius * mInnerCircleRatio / 255;
+
+        mTotalValue = 0;
         for (PieSlice slice : mSlices) {
-            totalValue += slice.getValue();
+            mTotalValue += slice.getValue();
         }
 
         int count = 0;
@@ -132,13 +133,13 @@ public class PieGraph extends View implements  HoloGraphAnimate {
             } else {
                 mPaint.setColor(slice.getColor());
             }
-            currentSweep = (slice.getValue() / totalValue) * (360);
+            currentSweep = (slice.getValue() / mTotalValue) * (360);
 
-            mRectF.set(midX - radius, midY - radius, midX + radius, midY + radius);
+            mRectF.set(mCentralPoint.x - mRadius, mCentralPoint.y - mRadius, mCentralPoint.x + mRadius, mCentralPoint.y + mRadius);
             createArc(p, mRectF, currentSweep,
                     currentAngle + mPadding, currentSweep - mPadding);
-            mRectF.set(midX - innerRadius, midY - innerRadius,
-                    midX + innerRadius, midY + innerRadius);
+            mRectF.set(mCentralPoint.x - innerRadius, mCentralPoint.y - innerRadius,
+                    mCentralPoint.x + innerRadius, mCentralPoint.y + innerRadius);
             createArc(p, mRectF, currentSweep,
                     (currentAngle + mPadding) + (currentSweep - mPadding),
                     -(currentSweep - mPadding));
@@ -147,36 +148,23 @@ public class PieGraph extends View implements  HoloGraphAnimate {
 
             // Create selection region
             Region r = slice.getRegion();
-            r.set((int) (midX - radius),
-                    (int) (midY - radius),
-                    (int) (midX + radius),
-                    (int) (midY + radius));
+            r.set((int) (mCentralPoint.x - mRadius),
+                    (int) (mCentralPoint.y - mRadius),
+                    (int) (mCentralPoint.x + mRadius),
+                    (int) (mCentralPoint.y + mRadius));
             canvas.drawPath(p, mPaint);
 
-            // Draw percentage values
-            if(mPercentageValues) {
-                String textToDraw = String.format("%.0f%%", currentSweep / 360 * 100);
-                float textAngle = currentAngle + currentSweep / 2;
-                float cos = (float) Math.cos(Math.toRadians((double) textAngle));
-                float sin = (float) Math.sin(Math.toRadians((double) textAngle));
-                float textX = midX + (radius + mPercentageOffset + mPercentageRadius) * cos;
-                float textY = midY + (radius + mPercentageOffset + mPercentageRadius) * sin;
-
-                mPaint.reset();
-                mPaint.setAntiAlias(true);
-                mPaint.setTextSize(mPercentageRadius);
-                mPaint.setTextAlign(Paint.Align.CENTER);
-                mPaint.setColor(getResources().getColor(android.R.color.white));
-                canvas.drawCircle(textX, textY, mPercentageRadius + 2, mPaint);
-                mPaint.setColor(slice.getColor());
-                canvas.drawCircle(textX, textY, mPercentageRadius, mPaint);
-                mPaint.setColor(getResources().getColor(android.R.color.white));
-                canvas.drawText(textToDraw, textX, textY - (mPaint.descent() + mPaint.ascent()) / 2, mPaint);
-            }
+            // Calculate center angles for slices (need to draw labels)
+            slice.setCentralAngle(currentAngle + currentSweep / 2);
 
             currentAngle = currentAngle + currentSweep;
             count++;
         }
+
+        if (mDrawLabels) {
+            drawLabels(canvas);
+        }
+
         mDrawCompleted = true;
     }
 
@@ -185,6 +173,33 @@ public class PieGraph extends View implements  HoloGraphAnimate {
             p.addArc(mRectF, startAngle, sweepAngle);
         } else {
             p.arcTo(mRectF, startAngle, sweepAngle);
+        }
+    }
+
+    private void drawLabels(Canvas canvas) {
+        for (PieSlice slice : mSlices) {
+            int percentageValue = (int) (slice.getValue() / mTotalValue * 100);
+            if (percentageValue > 0 && percentageValue < 100) {
+                String textToDraw = String.format("%d%%", percentageValue);
+                float cos = (float) Math.cos(Math.toRadians((double) slice.getCentralAngle()));
+                float sin = (float) Math.sin(Math.toRadians((double) slice.getCentralAngle()));
+                float centerX = mCentralPoint.x + (mRadius + mLabelOffset + mLabelRadius) * cos;
+                float centerY = mCentralPoint.y + (mRadius + mLabelOffset + mLabelRadius) * sin;
+
+                // Draw transparent outer circle
+                mPaint.setColor(getResources().getColor(android.R.color.white));
+                canvas.drawCircle(centerX, centerY, mLabelRadius + 1, mPaint);
+
+                // Draw inner color circle
+                mPaint.setColor(slice.getColor());
+                canvas.drawCircle(centerX, centerY, mLabelRadius, mPaint);
+
+                // Draw text
+                mPaint.setColor(getResources().getColor(android.R.color.white));
+                mPaint.setTextSize((int) (0.8 * mLabelRadius));
+                mPaint.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(textToDraw, centerX, centerY - (mPaint.descent() + mPaint.ascent()) / 2, mPaint);
+            }
         }
     }
 
@@ -361,14 +376,39 @@ public class PieGraph extends View implements  HoloGraphAnimate {
             }});
             va.start();
 
-        }
-
-
+    }
 
     @Override
     public void setAnimationListener(Animator.AnimatorListener animationListener) { mAnimationListener = animationListener;}
 
     public interface OnSliceClickedListener {
         public abstract void onClick(int index);
+    }
+
+    public boolean getDrawLabels() {
+        return mDrawLabels;
+    }
+
+    public void setDrawLabels(boolean drawLabels) {
+        mDrawLabels = drawLabels;
+        postInvalidate();
+    }
+
+    public int getLabelRadius() {
+        return mLabelRadius;
+    }
+
+    public void setLabelRadius(int labelRadius) {
+        mLabelRadius = labelRadius;
+        postInvalidate();
+    }
+
+    public int getLabelOffset() {
+        return mLabelOffset;
+    }
+
+    public void setLabelOffset(int labelOffset) {
+        mLabelOffset = labelOffset;
+        postInvalidate();
     }
 }
